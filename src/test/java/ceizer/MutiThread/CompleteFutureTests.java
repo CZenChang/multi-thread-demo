@@ -26,7 +26,7 @@ class CompleteFutureTests {
 
 	/**
 	 * whenComplete (result, throwable)
-	 * BiConsumer 2入參 0出
+	 * BiConsumer 2入參 0出 , 僅執行 , 不回傳(不更動原CompletableFuture)
 	 * 測試是否能執行兩次 依序執行
 	 * 結論: 可以
 	 */
@@ -184,6 +184,42 @@ class CompleteFutureTests {
 			System.out.println(Thread.currentThread().getName() + "  supply end");
 			return a;
 		}, executorService);
+	}
+
+	/**
+	 * acceptEither(Consumer)  处理最快完成的 Future, 其餘拋棄, 不改變原 future
+	 * applyEither(Function) 处理最快完成的 Future, 其餘拋棄, 會改變原 future
+	 * @apiNote
+	 * @author Ceizer
+	 * @since 2024/9/3
+	 */
+	@Test()
+	public void test5() {
+		CompletableFuture<String> future1 = CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.sleep(1000);  // 模拟延迟
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return "Result from Future 1";
+		});
+
+		CompletableFuture<String> future2 = CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.sleep(500);  // 模拟较短延迟
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return "Result from Future 2";
+		});
+
+		// 使用 acceptEither 处理最快完成的 Future
+		future1.acceptEither(future2, result -> {
+			System.out.println("Fastest result: " + result);
+		});
+
+		// 等待所有任务完成
+		CompletableFuture.allOf(future1, future2).join();
 	}
 
 }
